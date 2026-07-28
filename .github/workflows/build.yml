@@ -25,7 +25,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x' # 🔒 锁定 Go 1.23 版本，完美解决 1.26 的编译报错
+          go-version: '1.23.x' # 锁定 Go 1.23 版本，防止高版本编译报错
 
       - name: Install UPX
         run: sudo apt-get update && sudo apt-get install -y upx-ucl
@@ -36,8 +36,8 @@ jobs:
           GOOS: linux
           GOARCH: arm64
         run: |
-          # 仅保留 utls，极限精简
-          go build -v -tags "with_utls" -trimpath -ldflags "-s -w -buildid=" -o sing-box ./cmd/sing-box
+          # 核心修复：加入 with_provider 标签，启用外部节点列表支持
+          go build -v -tags "with_utls,with_provider" -trimpath -ldflags "-s -w -buildid=" -o sing-box ./cmd/sing-box
           
       - name: Compress with UPX
         run: |
@@ -51,6 +51,6 @@ jobs:
           body: |
             🚀 **专为 JC09 随身 WiFi 打造的极限精简版 Sing-box**
             - **架构**: ARM64 (aarch64)
-            - **包含特性**: Trojan 协议支持, uTLS 伪装
+            - **包含特性**: Trojan 协议支持, uTLS 伪装, Provider 外部节点支持
             - **优化**: 已去除调试信息并使用 UPX 极限压缩，专为小内存/小存储设备优化。
           files: sing-box
