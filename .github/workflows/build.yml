@@ -1,0 +1,51 @@
+name: Build Minimal sing-box for JC09 (ARM64)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '请输入要编译的 sing-box 版本标签 (例如: v1.9.3)'
+        required: true
+        default: 'v1.9.3'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sing-box source
+        uses: actions/checkout@v4
+        with:
+          repository: SagerNet/sing-box
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.22.0'
+
+      - name: Install UPX
+        run: sudo apt-get update && sudo apt-get install -y upx-ucl
+
+      - name: Build sing-box
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+          GOARCH: arm64
+        run: |
+          # 仅保留 utls (Trojan 伪装需要)，剔除面板等不必要功能，极限减小体积
+          go build -v -tags "with_utls" -trimpath -ldflags "-s -w -buildid=" -o sing-box ./cmd/sing-box
+          
+      - name: Compress with UPX
+        run: |
+          echo "=== 压缩前体积 ==="
+          ls -lh sing-box
+          # 使用 UPX 进行极限压缩
+          upx --best --lzma sing-box
+          echo "=== 压缩后体积 ==="
+          ls -lh sing-box
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sing-box-jc09-arm64
+          path: sing-box
